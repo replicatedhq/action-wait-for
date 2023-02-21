@@ -66,7 +66,7 @@ async function run() {
             await Promise.race([
                 new Promise((_, reject) => 
                 // reject the race if the timeout is reached
-                checkTimeout = setTimeout(reject, timeout, "timeout")),
+                (checkTimeout = setTimeout(reject, timeout, "timeout"))),
                 new Promise((resolve, reject) => {
                     // poll for checks at the provided interval
                     try {
@@ -125,30 +125,31 @@ async function run() {
                                 }
                             }
                             finally {
+                                // clear the checking flag to allow further polling
                                 checking = false;
                             }
                         }, interval);
                     }
                     catch (error) {
+                        // propagate any errors from the polling
                         reject(error);
                     }
                 }),
             ]);
         }
         finally {
-            if (checkInterval) {
+            //  clear the timeout and interval to allow the action to exit
+            if (checkInterval)
                 clearInterval(checkInterval);
-            }
-            if (checkTimeout) {
+            if (checkTimeout)
                 clearTimeout(checkTimeout);
-            }
         }
     }
     catch (error) {
+        // set the action as failed if any error is thrown
         if (error instanceof Error)
             core.setFailed(error.message);
     }
-    core.info("the real end, really");
 }
 run();
 
