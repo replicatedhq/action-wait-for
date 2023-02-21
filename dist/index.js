@@ -29,12 +29,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const github_1 = __importDefault(__nccwpck_require__(5438));
+const github = __importStar(__nccwpck_require__(5438));
 async function run() {
     try {
         // get and validate the inputs
@@ -60,7 +57,7 @@ async function run() {
             filterFunc = () => true;
         }
         // setup the github client
-        const octokit = github_1.default.getOctokit(token);
+        const octokit = github.getOctokit(token);
         // wait for the checks to complete
         let checkInterval;
         let checking = false;
@@ -81,7 +78,7 @@ async function run() {
                                 // get the checks for the provided ref, filtered by the check_name or regexp
                                 core.info(`Checking for active checks on ${ref}...`);
                                 const checks = (await octokit.paginate(octokit.rest.checks.listForRef, {
-                                    ...github_1.default.context.repo,
+                                    ...github.context.repo,
                                     ref,
                                     per_page: 100,
                                     check_name,
