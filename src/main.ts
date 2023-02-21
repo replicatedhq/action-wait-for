@@ -124,6 +124,7 @@ async function run(): Promise<void> {
           }
         }),
       ]);
+      core.info("reached the end")
     } finally {
       if (checkInterval) {
         clearInterval(checkInterval);
