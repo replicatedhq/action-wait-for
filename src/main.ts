@@ -64,7 +64,9 @@ async function run(): Promise<void> {
                     per_page: 100,
                     check_name,
                   })
-                ).filter(filterFunc);
+                )
+                .filter((check) => check.name !== github.context.job)
+                .filter(filterFunc);
 
                 // if there are no checks at all, assume a race condition and wait
                 if (checks.length === 0) {
