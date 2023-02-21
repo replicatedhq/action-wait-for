@@ -6,27 +6,50 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core_1 = __importDefault(__nccwpck_require__(2186));
+const core = __importStar(__nccwpck_require__(2186));
 const github_1 = __importDefault(__nccwpck_require__(5438));
 async function run() {
     try {
         // get and validate the inputs
-        const timeout = parseInt(core_1.default.getInput("timeout", { required: true }), 10) * 1000;
+        const timeout = parseInt(core.getInput("timeout", { required: true }), 10) * 1000;
         if (isNaN(timeout)) {
             throw new Error("timeout must be a number");
         }
-        const interval = parseInt(core_1.default.getInput("interval", { required: true }), 10) * 1000;
+        const interval = parseInt(core.getInput("interval", { required: true }), 10) * 1000;
         if (isNaN(interval)) {
             throw new Error("interval must be a number");
         }
-        const token = core_1.default.getInput("token", { required: true });
-        const ref = core_1.default.getInput("ref", { required: true });
-        const check_name = core_1.default.getInput("check-name");
-        const check_regexp = core_1.default.getInput("check-regexp");
+        const token = core.getInput("token", { required: true });
+        const ref = core.getInput("ref", { required: true });
+        const check_name = core.getInput("check-name");
+        const check_regexp = core.getInput("check-regexp");
         // set the filterFunc based on the inputs
         let filterFunc;
         if (check_regexp !== "") {
@@ -56,7 +79,7 @@ async function run() {
                             checking = true;
                             try {
                                 // get the checks for the provided ref, filtered by the check_name or regexp
-                                core_1.default.info(`Checking for active checks on ${ref}...`);
+                                core.info(`Checking for active checks on ${ref}...`);
                                 const checks = (await octokit.paginate(octokit.rest.checks.listForRef, {
                                     ...github_1.default.context.repo,
                                     ref,
@@ -65,18 +88,18 @@ async function run() {
                                 })).filter(filterFunc);
                                 // if there are no checks at all, assume a race condition and wait
                                 if (checks.length === 0) {
-                                    core_1.default.info("No matching checks found, waiting...");
+                                    core.info("No matching checks found, waiting...");
                                     return;
                                 }
                                 // split the checks list inti complete and incomplete
-                                core_1.default.info(`Found ${checks.length} matching checks...`);
+                                core.info(`Found ${checks.length} matching checks...`);
                                 const [complete, incomplete] = [
                                     checks.filter((check) => check.status === "completed"),
                                     checks.filter((check) => check.status !== "completed"),
                                 ];
                                 // if all checks are complete, check the conclusions
                                 if (incomplete.length === 0) {
-                                    core_1.default.info("All checks have completed, checking statuses...");
+                                    core.info("All checks have completed, checking statuses...");
                                     // find any unsuccessful checks
                                     const goodConclusions = [
                                         "success",
@@ -90,12 +113,12 @@ async function run() {
                                             .join(", ")}`);
                                     }
                                     // If we reach this point, all checks have completed successfully.
-                                    core_1.default.info("All checks have completed successfully.");
+                                    core.info("All checks have completed successfully.");
                                     resolve();
                                 }
                                 else {
                                     // if there are incomplete checks, end this poll and wait for the next one
-                                    core_1.default.info(`Waiting for ${incomplete.length} checks to complete...`);
+                                    core.info(`Waiting for ${incomplete.length} checks to complete...`);
                                     return;
                                 }
                             }
@@ -118,7 +141,7 @@ async function run() {
     }
     catch (error) {
         if (error instanceof Error)
-            core_1.default.setFailed(error.message);
+            core.setFailed(error.message);
     }
 }
 run();
