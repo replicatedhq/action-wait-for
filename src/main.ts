@@ -65,7 +65,7 @@ async function run(): Promise<void> {
                     check_name,
                   })
                 )
-                .filter((check) => check.name !== github.context.job)
+                .filter((check) => check.name !== github.context.job) // ignore the current job
                 .filter(filterFunc);
 
                 // if there are no checks at all, assume a race condition and wait
@@ -107,7 +107,7 @@ async function run(): Promise<void> {
                 } else {
                   // if there are incomplete checks, end this poll and wait for the next one
                   core.info(
-                    `Waiting for ${incomplete.length} checks to complete...`
+                    `Waiting for ${incomplete.length} checks to complete: [ ${incomplete.map(check => check.name).join(', ')} ]`
                   );
                   return;
                 }
