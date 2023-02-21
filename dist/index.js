@@ -65,7 +65,7 @@ async function run() {
             await Promise.race([
                 new Promise((_, reject) => 
                 // reject the race if the timeout is reached
-                setTimeout(() => reject("timeout"), timeout)),
+                setTimeout(reject, timeout, "timeout")),
                 new Promise((resolve, reject) => {
                     // poll for checks at the provided interval
                     try {
