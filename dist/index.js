@@ -59,13 +59,14 @@ async function run() {
         // setup the github client
         const octokit = github.getOctokit(token);
         // wait for the checks to complete
+        let checkTimeout;
         let checkInterval;
         let checking = false;
         try {
             await Promise.race([
                 new Promise((_, reject) => 
                 // reject the race if the timeout is reached
-                setTimeout(reject, timeout, "timeout")),
+                checkTimeout = setTimeout(reject, timeout, "timeout")),
                 new Promise((resolve, reject) => {
                     // poll for checks at the provided interval
                     try {
@@ -133,11 +134,13 @@ async function run() {
                     }
                 }),
             ]);
-            core.info("reached the end");
         }
         finally {
             if (checkInterval) {
                 clearInterval(checkInterval);
+            }
+            if (checkTimeout) {
+                clearTimeout(checkTimeout);
             }
         }
     }
@@ -145,6 +148,7 @@ async function run() {
         if (error instanceof Error)
             core.setFailed(error.message);
     }
+    core.info("the real end, really");
 }
 run();
 
