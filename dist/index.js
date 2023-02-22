@@ -32,6 +32,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+let checking = false; // singleton flag to prevent multiple checks at once
 async function run() {
     try {
         // get and validate the inputs
@@ -47,21 +48,20 @@ async function run() {
         const ref = core.getInput("ref", { required: true });
         const check_name = core.getInput("check-name");
         const check_regexp = core.getInput("check-regexp");
-        // set the filterFunc based on the inputs
-        let filterFunc;
+        // set the filter based on the inputs
+        let filter;
         if (check_regexp !== "") {
             const regexp = new RegExp(check_regexp);
-            filterFunc = (item) => regexp.test(item.name);
+            filter = (item) => regexp.test(item.name);
         }
         else {
-            filterFunc = () => true;
+            filter = () => true;
         }
         // setup the github client
         const octokit = github.getOctokit(token);
         // wait for the checks to complete
         let checkTimeout;
         let checkInterval;
-        let checking = false;
         try {
             await Promise.race([
                 new Promise((_, reject) => 
@@ -70,65 +70,9 @@ async function run() {
                 new Promise((resolve, reject) => {
                     // poll for checks at the provided interval
                     try {
-                        checkInterval = setInterval(async () => {
-                            // only run one check at a time
-                            if (checking)
-                                return;
-                            checking = true;
-                            try {
-                                // get the checks for the provided ref, filtered by the check_name or regexp
-                                core.info(`Checking for active checks on ${ref}...`);
-                                const checks = (await octokit.paginate(octokit.rest.checks.listForRef, {
-                                    ...github.context.repo,
-                                    ref,
-                                    per_page: 100,
-                                    check_name,
-                                }))
-                                    .filter((check) => check.name !== github.context.job) // ignore the current job
-                                    .filter(filterFunc);
-                                // if there are no checks at all, assume a race condition and wait
-                                if (checks.length === 0) {
-                                    core.info("No matching checks found, waiting...");
-                                    return;
-                                }
-                                // split the checks list inti complete and incomplete
-                                core.info(`Found ${checks.length} matching checks...`);
-                                const [complete, incomplete] = [
-                                    checks.filter((check) => check.status === "completed"),
-                                    checks.filter((check) => check.status !== "completed"),
-                                ];
-                                // if all checks are complete, check the conclusions
-                                if (incomplete.length === 0) {
-                                    core.info("All checks have completed, checking statuses...");
-                                    // find any unsuccessful checks
-                                    const goodConclusions = [
-                                        "success",
-                                        "skipped",
-                                    ];
-                                    const bad = complete.filter((check) => !goodConclusions.includes(check.conclusion));
-                                    if (bad.length > 0) {
-                                        // if there are any unsuccessful checks, fail the action
-                                        throw new Error(`Some checks failed: ${bad
-                                            .map((check) => check.details_url)
-                                            .join(", ")}`);
-                                    }
-                                    // If we reach this point, all checks have completed successfully.
-                                    core.info("All checks have completed successfully.");
-                                    resolve();
-                                }
-                                else {
-                                    // if there are incomplete checks, end this poll and wait for the next one
-                                    core.info(`Waiting for ${incomplete.length} checks to complete: [ ${incomplete
-                                        .map((check) => check.name)
-                                        .join(", ")} ]`);
-                                    return;
-                                }
-                            }
-                            finally {
-                                // clear the checking flag to allow further polling
-                                checking = false;
-                            }
-                        }, interval);
+                        checkInterval = setInterval(poll, interval, resolve, octokit, {
+                            ref, check_name, filter
+                        });
                     }
                     catch (error) {
                         // propagate any errors from the polling
@@ -152,6 +96,62 @@ async function run() {
     }
 }
 run();
+async function poll(resolve, octokit, { ref, check_name, filter }) {
+    // only run one check at a time
+    if (checking)
+        return;
+    checking = true;
+    try {
+        // get the checks for the provided ref, filtered by the check_name or regexp
+        core.info(`Checking for active checks on ${ref}...`);
+        const checks = (await octokit.paginate(octokit.rest.checks.listForRef, {
+            ...github.context.repo,
+            ref,
+            per_page: 100,
+            check_name,
+        }))
+            .filter((check) => check.name !== github.context.job) // ignore the current job
+            .filter(filter);
+        // if there are no checks at all, assume a race condition and wait
+        if (checks.length === 0) {
+            core.info("No matching checks found, waiting...");
+            return;
+        }
+        // split the checks list inti complete and incomplete
+        core.info(`Found ${checks.length} matching checks...`);
+        const [complete, incomplete] = [
+            checks.filter((check) => check.status === "completed"),
+            checks.filter((check) => check.status !== "completed"),
+        ];
+        // if all checks are complete, check the conclusions
+        if (incomplete.length === 0) {
+            core.info("All checks have completed, checking statuses...");
+            // find any unsuccessful checks
+            const goodConclusions = ["success", "skipped"];
+            const bad = complete.filter((check) => !goodConclusions.includes(check.conclusion));
+            if (bad.length > 0) {
+                // if there are any unsuccessful checks, fail the action
+                throw new Error(`Some checks failed: ${bad
+                    .map((check) => check.details_url)
+                    .join(", ")}`);
+            }
+            // If we reach this point, all checks have completed successfully.
+            core.info("All checks have completed successfully.");
+            resolve();
+        }
+        else {
+            // if there are incomplete checks, end this poll and wait for the next one
+            core.info(`Waiting for ${incomplete.length} checks to complete: [ ${incomplete
+                .map((check) => check.name)
+                .join(", ")} ]`);
+            return;
+        }
+    }
+    finally {
+        // clear the checking flag to allow further polling
+        checking = false;
+    }
+}
 
 
 /***/ }),

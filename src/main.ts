@@ -11,7 +11,7 @@ type PollArguments = {
   filter: (el: CheckRun) => boolean;
 };
 
-let checking = false // singleton flag to prevent multiple checks at once
+let checking = false; // singleton flag to prevent multiple checks at once
 
 async function run(): Promise<void> {
   try {
@@ -59,7 +59,9 @@ async function run(): Promise<void> {
           // poll for checks at the provided interval
           try {
             checkInterval = setInterval(poll, interval, resolve, octokit, {
-              ref, check_name, filter
+              ref,
+              check_name,
+              filter,
             });
           } catch (error) {
             // propagate any errors from the polling
