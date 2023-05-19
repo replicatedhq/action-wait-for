@@ -46,7 +46,7 @@ async function run(): Promise<void> {
         new Promise(
           (_, reject) =>
             // reject the race if the timeout is reached
-            (checkTimeout = setTimeout(reject, timeout, "timeout"))
+            (checkTimeout = setTimeout(reject, timeout, new Error("timeout")))
         ),
         new Promise<void>((resolve, reject) => {
           // poll for checks at the provided interval
@@ -135,7 +135,7 @@ async function run(): Promise<void> {
     }
   } catch (error) {
     // set the action as failed if any error is thrown
-    core.setFailed((<Error | string>error).toString());
+    core.setFailed((error as Error).toString());
   }
 }
 
