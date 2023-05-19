@@ -147,8 +147,7 @@ async function run() {
     }
     catch (error) {
         // set the action as failed if any error is thrown
-        if (error instanceof Error)
-            core.setFailed(error.message);
+        core.setFailed(error.toString());
     }
 }
 run();
