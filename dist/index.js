@@ -66,7 +66,7 @@ async function run() {
             await Promise.race([
                 new Promise((_, reject) => 
                 // reject the race if the timeout is reached
-                (checkTimeout = setTimeout(reject, timeout, "timeout"))),
+                (checkTimeout = setTimeout(reject, timeout, new Error("timeout")))),
                 new Promise((resolve, reject) => {
                     // poll for checks at the provided interval
                     try {
@@ -147,8 +147,7 @@ async function run() {
     }
     catch (error) {
         // set the action as failed if any error is thrown
-        if (error instanceof Error)
-            core.setFailed(error.message);
+        core.setFailed(error.toString());
     }
 }
 run();
@@ -2097,6 +2096,10 @@ function checkBypass(reqUrl) {
     if (!reqUrl.hostname) {
         return false;
     }
+    const reqHost = reqUrl.hostname;
+    if (isLoopbackAddress(reqHost)) {
+        return true;
+    }
     const noProxy = process.env['no_proxy'] || process.env['NO_PROXY'] || '';
     if (!noProxy) {
         return false;
@@ -2122,13 +2125,24 @@ function checkBypass(reqUrl) {
         .split(',')
         .map(x => x.trim().toUpperCase())
         .filter(x => x)) {
-        if (upperReqHosts.some(x => x === upperNoProxyItem)) {
+        if (upperNoProxyItem === '*' ||
+            upperReqHosts.some(x => x === upperNoProxyItem ||
+                x.endsWith(`.${upperNoProxyItem}`) ||
+                (upperNoProxyItem.startsWith('.') &&
+                    x.endsWith(`${upperNoProxyItem}`)))) {
             return true;
         }
     }
     return false;
 }
 exports.checkBypass = checkBypass;
+function isLoopbackAddress(host) {
+    const hostLower = host.toLowerCase();
+    return (hostLower === 'localhost' ||
+        hostLower.startsWith('127.') ||
+        hostLower.startsWith('[::1]') ||
+        hostLower.startsWith('[0:0:0:0:0:0:0:1]'));
+}
 //# sourceMappingURL=proxy.js.map
 
 /***/ }),
