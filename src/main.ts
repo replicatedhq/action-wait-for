@@ -135,7 +135,7 @@ async function run(): Promise<void> {
     }
   } catch (error) {
     // set the action as failed if any error is thrown
-    if (error instanceof Error) core.setFailed(error.message);
+    core.setFailed((<Error | string> error).toString())
   }
 }
 
