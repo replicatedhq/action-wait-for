@@ -47,6 +47,7 @@ async function run() {
         const ref = core.getInput("ref", { required: true });
         const check_name = core.getInput("check-name");
         const check_regexp = core.getInput("check-regexp");
+        const ok_conclusions = core.getInput("ok-conclusions", { required: false });
         // set the filterFunc based on the inputs
         let filterFunc;
         if (check_regexp !== "") {
@@ -101,11 +102,8 @@ async function run() {
                                 if (incomplete.length === 0) {
                                     core.info("All checks have completed, checking statuses...");
                                     // find any unsuccessful checks
-                                    const goodConclusions = [
-                                        "success",
-                                        "skipped",
-                                    ];
-                                    const bad = complete.filter((check) => !goodConclusions.includes(check.conclusion));
+                                    const good_conclusions = ok_conclusions.split(",");
+                                    const bad = complete.filter((check) => !good_conclusions.includes(check.conclusion));
                                     if (bad.length > 0) {
                                         // if there are any unsuccessful checks, fail the action
                                         throw new Error(`Some checks failed: ${bad

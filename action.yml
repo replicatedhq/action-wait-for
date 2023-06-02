@@ -26,6 +26,10 @@ inputs:
     description: 'Check name regexp to wait for'
     required: false
     default: ''
+  ok-conclusions:
+    description: 'The job conclusions accepted as successful, comma separated'
+    required: false
+    default: 'success,skipped'
 runs:
   using: 'node16'
   main: 'dist/index.js'
