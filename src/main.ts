@@ -2,8 +2,9 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import { Endpoints } from "@octokit/types";
 
-type CheckRun =
-  Endpoints["GET /repos/{owner}/{repo}/commits/{ref}/check-runs"]["response"]["data"]["check_runs"][0];
+type CheckRunResponse =
+  Endpoints["GET /repos/{owner}/{repo}/commits/{ref}/check-runs"]["response"]["data"]["check_runs"];
+type CheckRun = CheckRunResponse[0];
 
 async function run(): Promise<void> {
   try {
@@ -27,10 +28,10 @@ async function run(): Promise<void> {
     const ok_conclusions = core.getInput("ok-conclusions", { required: false });
 
     // set the filterFunc based on the inputs
-    let filterFunc: (el: CheckRun) => boolean;
+    let filterFunc: (el: { name: string }) => boolean;
     if (check_regexp !== "") {
       const regexp = new RegExp(check_regexp);
-      filterFunc = (item: CheckRun) => regexp.test(item.name);
+      filterFunc = (item) => regexp.test(item.name);
     } else {
       filterFunc = () => true;
     }
@@ -39,8 +40,8 @@ async function run(): Promise<void> {
     const octokit = github.getOctokit(token);
 
     // wait for the checks to complete
-    let checkTimeout: NodeJS.Timeout | undefined;
-    let checkInterval: NodeJS.Timer | undefined;
+    let checkTimeout: ReturnType<typeof setTimeout> | undefined;
+    let checkInterval: ReturnType<typeof setInterval> | undefined;
     let checking = false;
     try {
       await Promise.race([
